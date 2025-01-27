@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Compression d'image par K-moyennes</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        	
+        #imageContainer, #compressedContainer { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center;
+            margin: auto;
+        }
+        
+        .pixel-table {
+            border-collapse: collapse;
+            margin: auto;
+        }
+        .pixel-cell {
+            width: 1px;
+            height: 1px;
+            border: 0px solid #ddd;
+        }
+        .pixel-dem {
+            width: 10px;
+            height: 10px;
+            border: 5px solid #ddd;
+        }
+        
+    </style>
+</head>
+<body>
+    <h1>Compression d'image par K-moyennes</h1>
+
+    <div style="display: flex; gap: 20px;">
+
+        
+        <div id='divimg' style="width: 40%;">
+            <h2>Image Originale</h2>
+            <img src="paysage.jpg" id='img'>
+        </div>
+        <div style="width: 20%;">
+            <label for="kInput">Nombre de pixels représentatifs (k) :</label>
+            <input type="number" id="kInput" value="5" min="2" max="50">
+            <button onclick="compressImage()">Compresser</button>
+        </div>
+       
+        <div id="centers" style="width: 40%;">
+            <h2>Couleurs représentatives</h2>
+        </div>
+
+
+    </div>
+    
+    
+    <div style="display: flex; gap: 20px;">
+        
+        <div id="imageContainer" style="width: 50%;">
+            <h2>Tableau dans lequel on reproduit l'image</h2>
+            <canvas id="imageContainer" style="display:none"></canvas>
+        </div>
+    
+        <div id="compressedContainer" style="width: 50%;">
+            <h2>Tableau avec l'image Compressée</h2>
+        </div>
+    </div>
+    <script>
+	
+	/* 
+    Insère l'image de paysage dans le canvas
+    Puis récupère les pixels du canvas un à un, et crée un tableau html avec dans chaque cellule td un pixel de l'image
+    */
+   	var img = document.getElementById("divimg").firstElementChild.nextElementSibling;
+   	var canvas = document.getElementById('imageContainer').firstElementChild.nextElementSibling;
+   	var ctx = canvas.getContext("2d");
+	img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const table = document.createElement('table');
+		table.className = 'pixel-table';
+
+		for (let y = 0; y < img.height; y += 1) {
+		    const row = document.createElement('tr');
+		    
+		    for (let x = 0; x < img.width; x += 1) {
+		        const cell = document.createElement('td');
+		        cell.className = 'pixel-cell';
+		        
+		        const pixelData = ctx.getImageData(x, y, 1, 1).data;
+		        cell.style.backgroundColor = `rgb(${pixelData[0]}, ${pixelData[1]}, ${pixelData[2]})`;
+		        
+		        row.appendChild(cell);
+		    }
+		    table.appendChild(row);
+		}
+		
+		document.getElementById("imageContainer").appendChild(table);
+	}
+	
+	
+
+	/*
+    Cette fonction doit extraire tous les pixels d'un tableau HTML et les organiser dans une structure de données à deux dimensions. 
+    Les rows de la table HTML vous fournissent les lignes de votre structure de données, quand les cells des rows vous fournissent les colonnes.
+    */
+	function getPixels(table) {
+        /*
+            TODO
+        */
+	}
+	
+    /*
+    Cette fonction doit extraire les composantes RGB d'un pixel spécifique du tableau. 
+    Vous pouvez vous appuyer sur la fonction getRGBFromBackgroundColor déjà implémentée.
+    */
+    function getPixel(table, x, y) {
+        /*
+            TODO
+        */
+    }
+        
+    /*
+    Cette fonction doit sélectionner k pixels aléatoires qui serviront de couleurs représentatives.
+    */
+    function selectRandomCenters(pixels, k) {
+        /*
+            TODO
+        */
+    }
+
+	/*
+    Cette fonction doit calculer la distance euclidienne entre deux pixels dans l'espace RGB.
+    */
+    function calculateDistance(pixel1, pixel2) {
+        /*
+            TODO
+        */
+    }
+
+    function getRGBFromBackgroundColor(cell) {
+	    const bgColor = cell.style.backgroundColor;
+	    const match = bgColor.match(/rgb\((\d+), (\d+), (\d+)\)/);
+	    return match ? {
+		r: parseInt(match[1]),
+		g: parseInt(match[2]),
+		b: parseInt(match[3])
+	    } : null;
+	}
+	
+	function tirerUnEntier(max) {
+	    return Math.floor(Math.random() * (max + 1));
+	}
+
+    function assignPixelsToCenters(pixels, centers, k) {
+        const clusters = [];
+        
+        // Initialisation des clusters
+        // Chaque cluster est lui meme une liste vide pour le moment, on crée donc k listes vides
+        for (let i = 0; i < k; i++) {
+            clusters.push([]);
+        }
+        
+        // Attribution de chaque pixel au centre le plus proche
+        for (let i = 0; i < pixels.length; i++) {
+            for (let j=0; j < pixels[i].length; j++) {
+                // On pose le centre 0 comme le plus proche, puis on va boucler sur les autres centres voir si leur distance au pixel est plus faible
+                let closestCenterIndex = 0;
+                let minDistance = calculateDistance(pixels[i][j], centers[0]);
+                // On boucle sur les centres
+                for (let k = 1; k < centers.length; k++) {
+                    const currentDistance = calculateDistance(pixels[i][j], centers[k]);
+                    if (currentDistance < minDistance) {
+                        minDistance = currentDistance;
+                        closestCenterIndex = k;
+                    }
+                }
+                //On ajoute le pixel au cluster dont le centre est le plus proche
+                clusters[closestCenterIndex].push(pixels[i][j]);
+            }
+            
+        }
+        return clusters;
+    }
+
+	// À partir des clusters calculés (une liste de liste), on doit recalculer les centres
+    function recalculateCenters(clusters, k) {
+        const newCenters = [];
+        // On boucle sur tous les clusters
+        for (let i = 0; i < k; i++) {
+            //On va faire la moyenne, pour tous les pixels, des niveaux de rouge, vert et bleu
+            let sumR = 0, sumG = 0, sumB = 0;
+            // On fait d'abord la somme
+            for (let j = 0; j < clusters[i].length; j++) {
+                sumR += clusters[i][j].r;
+                sumG += clusters[i][j].g;
+                sumB += clusters[i][j].b;
+            }
+            // Puis on divise pas la taille du cluster pour obtenir la moyenne
+            const avgR = Math.round(sumR / clusters[i].length);
+            const avgG = Math.round(sumG / clusters[i].length);
+            const avgB = Math.round(sumB / clusters[i].length);
+            
+            newCenters.push({
+                    r: avgR,
+                    g: avgG,
+                    b: avgB
+                });
+        }
+        
+        return newCenters;
+    }
+
+    function compressImage() {
+        //On récupère k, le nombre de pixels de référence (centres) que l'on va utiliser pour la compression
+		const k = parseInt(document.getElementById('kInput').value);
+        //On récupère le tableau dans lequel on a stocké chaque pixel de l'image
+        const table = document.getElementById("imageContainer").firstElementChild.nextElementSibling.nextElementSibling; 
+        //On récupère les pixels de l'image sous forme de liste à deux dimensions
+        const pixels = getPixels(table);
+        //On tire au hasard k pixels de référence
+        let centers = selectRandomCenters(pixels, k);
+       
+        let iterations = 0;
+        let converged = false;
+        
+        while (!converged && iterations < 50) {
+            const oldCenters = [];
+            
+            // Copie des anciens centres
+            for (let i = 0; i < k; i++) {
+                oldCenters.push({
+                    r: centers[i].r,
+                    g: centers[i].g,
+                    b: centers[i].b
+                });
+            }
+            
+            const clusters = assignPixelsToCenters(pixels, centers, k);
+            centers = recalculateCenters(clusters, k);
+            // Vérification de la convergence
+            converged = true;
+            for (let i = 0; i < centers.length; i++) {
+                if (Math.abs(centers[i].r - oldCenters[i].r) >= 1 ||
+                    Math.abs(centers[i].g - oldCenters[i].g) >= 1 ||
+                    Math.abs(centers[i].b - oldCenters[i].b) >= 1) {
+                    converged = false;
+                    break;
+                }
+            }
+            
+            iterations++;
+        }
+        
+        const compressedContainer = document.getElementById('compressedContainer');
+
+        // On rend visible ces pixels sur la page
+        const table_compresse = document.createElement('table');
+		table_compresse.className = 'pixel-table';        
+        // Remplacement des pixels originaux par leurs centres
+        for (let i = 0; i < pixels.length; i++) {
+            const row = document.createElement('tr');
+            for (let j=0; j < pixels[i].length; j++) {
+                const cell = document.createElement('td');
+                cell.className = 'pixel-cell';
+                let closestCenterIndex = 0;
+                let minDistance = calculateDistance(pixels[i][j], centers[0]);
+                
+                for (let v = 1; v < centers.length; v++) {
+                    const currentDistance = calculateDistance(pixels[i][j], centers[v]);
+                    if (currentDistance < minDistance) {
+                        minDistance = currentDistance;
+                        closestCenterIndex = v;
+                    }
+                }
+                
+                const compressedPixel = centers[closestCenterIndex];
+                cell.style.backgroundColor = `rgb(${compressedPixel.r}, ${compressedPixel.g}, ${compressedPixel.b})`;
+                row.appendChild(cell);
+            }
+            table_compresse.appendChild(row);
+        }
+        if (compressedContainer.children.length > 1) {
+            compressedContainer.removeChild(compressedContainer.firstElementChild.nextElementSibling);
+        }
+        compressedContainer.appendChild(table_compresse);
+
+        // On rend visibles les pixels utilisés pour compresser l'image
+        const centers_table = document.createElement('table');
+		centers_table.className = 'pixel-table';
+        const row = document.createElement('tr');
+		for (let i = 0; i < k; i += 1) {
+            const cell = document.createElement('td');
+            cell.className = 'pixel-dem';
+            cell.style.backgroundColor = `rgb(${centers[i].r}, ${centers[i].g}, ${centers[i].b})`;
+            row.appendChild(cell);
+		}
+        centers_table.appendChild(row);
+		const centers_div = document.getElementById("centers");
+        console.log(centers_div);
+        if (centers_div.children.length > 1) {
+            centers_div.removeChild(centers_div.firstElementChild.nextElementSibling);
+        }
+        centers_div.appendChild(centers_table);
+        
+    }
+    </script>
+</body>
+</html>
